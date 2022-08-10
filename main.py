@@ -8,15 +8,15 @@ import face_recognition as fr
 PATH = 'dataset'
 
 images = []
-names = []
+sid_s = []
 
-df = pd.DataFrame(columns=['name', 'time'])
+df = pd.DataFrame(columns=['sid', 'time'])
 
 # load dataset
 for cl in os.listdir(PATH):
     curImg = cv2.imread(f'{PATH}/{cl}')
     images.append(curImg)
-    names.append(os.path.splitext(cl)[0])
+    sid_s.append(os.path.splitext(cl)[0])
 
 
 def findEncodings(images):
@@ -29,14 +29,14 @@ def findEncodings(images):
     return encodeList
 
 
-def present(name):
+def present(sid):
     global df
 
-    if not name in df['name'].values:
+    if not sid in df['sid'].values:
         df = pd.concat([
             df,
             pd.DataFrame([{
-                'name': name,
+                'sid': sid,
                 'time': datetime.datetime.now()
                 }])
             ])
@@ -59,20 +59,20 @@ while True:
     encodesCurFrame = fr.face_encodings(imgS, facesCurFrame)
 
     for encodeFace, faceLoc in zip(encodesCurFrame, facesCurFrame):
-        matches = fr.compare_faces(encodeListKnown, encodeFace)
+        matches = fr.compare_faces(encodeListKnown, encodeFace, tolerance=0.5)
         faceDis = fr.face_distance(encodeListKnown, encodeFace)
+
         matchIndex = np.argmin(faceDis)
 
         if matches[matchIndex]:
-            name = names[matchIndex]
-            present(name)
+            sid = sid_s[matchIndex]
             y1, x2, y2, x1 = faceLoc
             y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(img, (x1, y2 - 35), (x2, y2),
                           (0, 255, 0), cv2.FILLED)
-            cv2.putText(img, name, (x1 + 6, y2 - 6),
+            cv2.putText(img, sid, (x1 + 6, y2 - 6),
                         cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)
-
+            present(sid)
     cv2.imshow('Output', img)
     cv2.waitKey(1)
